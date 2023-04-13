@@ -1,0 +1,17 @@
+{
+  "name": "nuxt-app",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "format": "npx prettier --write .",
+    "check": "npx prettier --check ."
+  },
+  "devDependencies": {
+    "nuxt": "^3.4.0",
+    "prettier": "^2.8.7"
+  }
+}
