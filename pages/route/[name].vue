@@ -6,10 +6,10 @@ const route = useRoute();
 const { name } = route.params;
 
 useSeoMeta({
-  title: `Station - ${name}`
+  title: `Linie - ${name}`
 });
 
-const { data, error } = await useFetch(`/api/station/${name}`);
+const { data, error } = await useFetch(`/api/route/${name}`);
 </script>
 
 <template>
@@ -17,19 +17,31 @@ const { data, error } = await useFetch(`/api/station/${name}`);
     <h1 class="text-3xl">Not found!</h1>
     <p>{{ error.data?.message || error.statusMessage }}</p>
   </div>
-  <div v-if="data" class="flex justify-between">
-    <div class="flex flex-col gap-2">
+  <div v-if="data" class="flex justify-between max-h-full">
+    <div class="flex flex-col gap-2 flex-grow">
       <h1 class="text-3xl mb-4">{{ name }}</h1>
       <h2 class="text-xl">Count: {{ data.total_count }}</h2>
       <h2 class="text-xl">Routes:</h2>
-      <div class="flex flex-wrap w-96 gap-2">
-        <Route v-for="route in data.routes" :options="route" />
-      </div>
+      <!--      <div class="flex flex-wrap w-96 gap-2">-->
+      <!--        <Route v-for="route in data.routes" :options="route" />-->
+      <!--      </div>-->
       <h2 class="text-xl">Avg Added: {{ data.avg_added }}</h2>
       <h2 class="text-xl">Avg Arrival: {{ data.avg_arr }}</h2>
       <h2 class="text-xl">Avg Departure: {{ data.avg_dep }}</h2>
+
+      <Line
+        :lat-lngs="
+          data.stops.map(({ stop_lat, stop_lon }) => [stop_lat, stop_lon])
+        "
+      />
     </div>
-    <MiniMap :lat-lng="[data.lat, data.lon]" />
+    <Table
+      :data="data.stops"
+      :cols="['stop_name']"
+      @click="navigateTo(`/station/${$event.stop_name}`)"
+    >
+      <template #col-stop_name><th>Stop</th></template>
+    </Table>
   </div>
 </template>
 

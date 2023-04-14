@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Strip {
+  id    String @unique
+  stop1 String
+  stop2 String
+
+  @@unique([stop1, stop2])
+}
+
+model StripDelay {
+  date      DateTime @db.Timestamp
+  id        Int      @id @default(autoincrement())
+  trip_id   Int
+  stop1_id  String
+  stop2_id  String
+  delay     Int      @db.Integer
+  timestamp DateTime @db.Timestamp
+
+  @@index([stop1_id, stop2_id])
+  @@index([stop1_id])
+  @@index([stop2_id])
+  @@index([timestamp])
+}
+
+model StopDelay {
+  date            DateTime @db.Timestamp
+  id              Int      @id @default(autoincrement())
+  route_id        Int
+  trip_id         Int
+  stop_id         String?
+  start_time      DateTime @db.Time
+  start_date      DateTime @db.Date
+  arrival_delay   Int?     @db.Integer
+  departure_delay Int?     @db.Integer
+  stopSequence    Int      @db.Integer
+  timestamp       DateTime @db.Timestamp
+  @@index([trip_id, start_date])
+}
+
+model Agency {
+  date            DateTime @db.Timestamp
+  agency_id       Int      @db.Integer
+  agency_name     String   @default("") @db.Text
+  agency_url      String   @default("") @db.Text
+  agency_timezone String   @default("") @db.Text
+  agency_lang     String   @default("de") @db.Char(2)
+  agency_phone    String   @default("") @db.Text
+
+  @@unique([date, agency_id])
+  @@index([date])
+}
+
+model Route {
+  date             DateTime @db.Timestamp
+  route_id         Int      @db.Integer
+  agency_id        Int      @db.Integer
+  route_short_name String   @default("") @db.Text
+  route_long_name  String   @default("") @db.Text
+  route_type       Int      @default(0) @db.SmallInt
+  route_color      String   @default("") @db.VarChar(6)
+  route_text_color String   @default("") @db.VarChar(6)
+  route_desc       String   @default("") @db.Text
+
+  @@unique([date, route_id])
+  @@index([agency_id])
+  @@index([route_short_name])
+  @@index([date])
+}
+
+model Trip {
+  date                  DateTime @db.Timestamp
+  route_id              Int      @db.Integer
+  service_id            Int      @default(0) @db.SmallInt
+  trip_id               Int      @db.Integer
+  trip_headsign         String   @default("") @db.Text
+  trip_short_name       String   @default("") @db.Text
+  direction_id          Int      @default(0) @db.SmallInt
+  block_id              Int?     @db.SmallInt
+  shape_id              Int?     @db.Integer
+  wheelchair_accessible Int      @default(0) @db.SmallInt
+  bikes_allowed         Int      @default(0) @db.SmallInt
+  @@unique([date, trip_id])
+  @@index([route_id])
+  @@index([date])
+}
+
+model StopTime {
+  date           DateTime @db.Timestamp
+  trip_id        Int      @db.Integer
+  arrival_time   DateTime @db.Time
+  departure_time DateTime @db.Time
+  stop_id        String   @db.Text
+  stop_sequence  Int      @db.Integer
+  pickup_type    Int      @default(0) @db.SmallInt
+  drop_off_type  Int      @default(0) @db.SmallInt
+  stop_headsign  String   @default("") @db.Text
+
+  @@unique([date, trip_id, stop_sequence])
+  @@index([trip_id])
+  @@index([date])
+}
+
+model Stop {
+  date                DateTime @db.Timestamp
+  stop_id             String   @db.Text
+  stop_code           String?  @default("") @db.Text
+  stop_name           String?  @default("") @db.Text
+  stop_desc           String?  @default("") @db.Text
+  stop_lat            String?  @default("") @db.Text
+  stop_lon            String?  @default("") @db.Text
+  location_type       Int      @default(0) @db.SmallInt
+  parent_station      String?  @default("") @db.Text
+  wheelchair_boarding Int      @default(0) @db.SmallInt
+  platform_code       String?  @default("") @db.Text
+  zone_id             String?  @default("") @db.Text
+  @@unique([date, stop_id])
+  @@index([date])
+}
