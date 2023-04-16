@@ -1,15 +1,13 @@
-<script setup lang="ts">
-
-</script>
+<script setup lang="ts"></script>
 
 <template>
-<main>
-  <slot />
-</main>
+  <main>
+    <slot />
+  </main>
 </template>
 
 <style scoped>
 main {
-    @apply top-16 bottom-10 absolute w-screen bg-gray-200
+  @apply top-16 bottom-[47px] absolute w-screen bg-gray-200;
 }
 </style>

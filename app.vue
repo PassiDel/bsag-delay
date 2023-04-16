@@ -5,16 +5,23 @@
       <NuxtLink to="/map">Map</NuxtLink>
       <NuxtLink to="/station">Station</NuxtLink>
       <NuxtLink to="/route">Linie</NuxtLink>
+      <NuxtLink to="/about">About</NuxtLink>
     </nav>
   </header>
   <NuxtLayout>
     <NuxtPage />
   </NuxtLayout>
-  <footer>
+  <footer class="flex flex-row gap-8 justify-center">
     <p>
       Made by <a href="https://syma.dev" target="_blank">Pascal Syma</a> in
       2023.
     </p>
+    <a
+      href="https://creativecommons.org/licenses/by-sa/4.0/legalcode.de"
+      target="_blank"
+    >
+      <img alt="CC BY-SA 4.0" src="cc.png"
+    /></a>
   </footer>
 </template>
 <style>
@@ -22,7 +29,7 @@ header {
   @apply h-16 w-screen bg-gray-500 text-black absolute top-0;
 }
 footer {
-  @apply h-10 w-screen bg-gray-800 bottom-0 fixed text-center text-white p-2;
+  @apply h-[47px] w-screen bg-gray-800 bottom-0 fixed text-center text-white p-2;
 }
 a {
   @apply hover:underline;
