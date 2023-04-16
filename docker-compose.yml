@@ -1,0 +1,28 @@
+version: "3"
+volumes:
+  postgres:
+    driver: local
+
+services:
+  delay:
+    image: ghcr.io/passidel/bsag-delay:${DELAY_VERSION}
+    build:
+      context: .
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - postgres
+    env_file:
+      - .env
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_USER: ${DATABASE_USER:-postgres}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-changeme}
+      POSTGRES_DB: ${DATABASE_DATABASE:-db}
+      PGDATA: /data/postgres
+    volumes:
+      - postgres:/data/postgres
+    ports:
+      - "127.0.0.1:${DATABASE_PORT}:5432"
+    restart: unless-stopped

@@ -31,7 +31,7 @@ const { data, pending } = await useFetch(
       >
     </Table>
     <Pagination
-      v-model:page="page as number"
+      v-model:page="page"
       :pending="pending"
       :last-page="data.lastPage"
     />
