@@ -4,6 +4,14 @@ volumes:
     driver: local
 
 services:
+  convert:
+    image: ghcr.io/passidel/convert-delay:${DELAY_VERSION}
+    depends_on:
+      - pgbouncer
+    volumes:
+      - ./data:/usr/local/bin/delay/data
+    env_file:
+      - .env
   delay:
     image: ghcr.io/passidel/bsag-delay:${DELAY_VERSION}
     build:
@@ -12,6 +20,8 @@ services:
       - "127.0.0.1:3000:3000"
     depends_on:
       - postgres
+    volumes:
+      - ./.cache:/usr/local/bin/delay/.cache
     env_file:
       - .env
   postgres:
@@ -26,3 +36,17 @@ services:
     ports:
       - "127.0.0.1:${DATABASE_PORT}:5432"
     restart: unless-stopped
+  pgbouncer:
+    image: bitnami/pgbouncer
+    environment:
+      POSTGRESQL_HOST: "postgres"
+      POSTGRESQL_DATABASE: ${DATABASE_DATABASE:-db}
+      PGBOUNCER_DATABASE: ${DATABASE_DATABASE:-db}
+      POSTGRESQL_USERNAME: ${DATABASE_USER:-postgres}
+      POSTGRESQL_PASSWORD: ${DATABASE_PASSWORD:-changeme}
+      PGBOUNCER_PORT: ${BOUNCER_PORT}
+      PGBOUNCER_POOL_MODE: "transaction"
+    ports:
+      - "127.0.0.1:${BOUNCER_PORT:-6432}:6432"
+    links:
+      - postgres:postgres
