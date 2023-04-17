@@ -20,7 +20,7 @@
       href="https://creativecommons.org/licenses/by-sa/4.0/legalcode.de"
       target="_blank"
     >
-      <img alt="CC BY-SA 4.0" src="cc.png"
+      <img alt="CC BY-SA 4.0" :src="cc"
     /></a>
   </footer>
 </template>
@@ -36,6 +36,9 @@ a {
 }
 </style>
 <script setup lang="ts">
+import 'leaflet/dist/leaflet.css';
+
+import cc from './assets/cc.png';
 useHead({
   htmlAttrs: {
     lang: 'de'
