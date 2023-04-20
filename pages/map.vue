@@ -1,10 +1,19 @@
 <script setup lang="ts">
 import { LControl, LGeoJson, LMap, LTileLayer } from '@vue-leaflet/vue-leaflet';
-import { clamp, lerpColor, colors } from '~/utils/hex';
-import { ref, reactive, useLazyFetch, onBeforeMount, watch } from '#imports';
+import { clamp, lerpColor, colors, hexToString } from '~/utils/hex';
+import {
+  ref,
+  reactive,
+  useLazyFetch,
+  onBeforeMount,
+  watch,
+  useFetch
+} from '#imports';
 import { Feature, FeatureCollection, GeoJSON, Geometry } from 'geojson';
 import { UnwrapRef } from 'vue';
 import type { CircleMarker } from 'leaflet';
+import { getDaysArray, getMonthArray } from '~/utils/days';
+import SideControl from '~/components/SideControl.vue';
 
 definePageMeta({
   layout: 'full'
@@ -14,47 +23,106 @@ useSeoMeta({
 });
 
 const zoom = ref(14);
-const toggle = reactive({ key: 'avg' as keyof Stop, time: 'year' });
 
-const queryParams = computed(() => {
-  const params = new URLSearchParams();
-  params.append('time', toggle.time);
+const { data: allStops } = await useFetch('/api/station/all');
 
-  return params.toString();
+const toggle = reactive({
+  key: 'avg' as keyof StopData,
+  time: 'all',
+  week: '0',
+  day: new Date(allStops.value!!.dates.min!!).toISOString().slice(0, 10),
+  month: '2022-01-04',
+  hour: '12'
 });
 
+const queryUri = computed(() => {
+  const paths = [toggle.time];
+  if (toggle.time === 'week') paths.push(toggle.week);
+  if (toggle.time === 'day') paths.push(toggle.day);
+  if (toggle.time === 'month') paths.push(toggle.month);
+  if (toggle.time === 'hour') paths.push(toggle.hour);
+
+  return paths.join('/');
+});
 const { data, pending } = await useLazyFetch(
-  () => `/api/?${queryParams.value}`
+  () => `/api/map/${queryUri.value}`
 );
-interface Stop {
-  stop_lon: string;
-  stop_lat: string;
+interface StopData {
   stop_name: string;
 
-  count: number;
-  avg: number;
-  max_added: number;
-  max_dep: number;
+  count: number | undefined;
+  avg: number | undefined;
+  max_added: number | undefined;
+  max_dep: number | undefined;
 }
 
-interface StopWithMarker extends Stop {
-  marker: CircleMarker | undefined;
+interface StopMarker {
+  marker: CircleMarker | null;
+  data: StopData | null;
 }
 
 const displayOptions = {
   key: [
     { key: 'avg', name: 'Relative Verspätung' },
     { key: 'count', name: 'Anzahl Fahrten' }
-  ] as { key: keyof Stop; name: string }[],
+  ] as { key: keyof StopData; name: string }[],
   time: [
-    { key: 'year', name: 'Jahr' },
+    { key: 'all', name: 'Alles' },
     { key: 'month', name: 'Monat' },
-    { key: 'week', name: 'Woche' },
-    { key: 'day', name: 'Tag' }
-  ]
+    { key: 'week', name: 'Wochentag' },
+    { key: 'day', name: 'Tag' },
+    { key: 'hour', name: 'Stunde' }
+  ],
+  week: [
+    'Sonntag',
+    'Montag',
+    'Dienstag',
+    'Mittwoch',
+    'Donnerstag',
+    'Freitag',
+    'Samstag'
+  ].map((d, i) => ({
+    key: i.toString(),
+    name: d
+  })),
+  day: getDaysArray(
+    allStops.value!!.dates.min!!,
+    allStops.value!!.dates.max!!
+  ).map((d) => ({ key: d.toISOString().slice(0, 10), name: d.toDateString() })),
+  month: getMonthArray(
+    allStops.value!!.dates.min!!,
+    allStops.value!!.dates.max!!
+  ).map((d) => ({
+    key: d.toISOString().slice(0, 10),
+    name: d.toLocaleString('de', { month: 'long', year: 'numeric' })
+  })),
+  hour: [...Array(24).keys()].map((i) => ({
+    key: i.toString(),
+    name: `${i.toString().padStart(2, '0')}:00`
+  }))
 };
 
-function calculateMarkerOptions(marker: Stop) {
+const showOptionType = computed(() => {
+  const options = ['key', 'time'];
+
+  if (toggle.time === 'week') options.push('week');
+  if (toggle.time === 'day') options.push('day');
+  if (toggle.time === 'month') options.push('month');
+  if (toggle.time === 'hour') options.push('hour');
+
+  return options;
+});
+
+function calculateMarkerOptions(marker: StopData | null) {
+  if (!marker || marker.count === undefined) {
+    return {
+      opacity: 0,
+      fillOpacity: 0,
+      fillColor: hexToString(0),
+      radius: 0,
+      attribution: 'VBN'
+    };
+  }
   const percent =
     Number(marker[toggle.key]) / data.value!!.boxValues.avg.median;
   return {
@@ -69,56 +137,67 @@ function calculateMarkerOptions(marker: Stop) {
   };
 }
 
-const log = console.log;
+type StopFeature = Feature<Geometry, StopMarker>;
 
-const geojson: FeatureCollection<Geometry, StopWithMarker> = reactive({
+const geojson: FeatureCollection<Geometry, StopMarker> = {
   type: 'FeatureCollection',
-  features: []
-});
-type StopFeature = (typeof geojson.features)[0];
+  features:
+    allStops.value?.stops.map(
+      (s) =>
+        ({
+          type: 'Feature',
+          id: s.stop_name,
+          geometry: {
+            type: 'Point',
+            coordinates: [
+              parseFloat(s.stop_lon) || 0,
+              parseFloat(s.stop_lat) || 0
+            ]
+          },
+          properties: {
+            marker: null,
+            data: null
+          }
+        } as StopFeature)
+    ) || []
+};
 
-const options = reactive({
+const options = {
   pointToLayer: undefined as
     | ((feature: StopFeature, point: any) => any)
     | undefined
-});
-
-watch(geojson, () => {
-  console.log('data change');
-});
+};
 
 watch(
   data,
   (newData) => {
     if (!newData) return;
     console.log('newdata!');
-    geojson.features.splice(0);
-    geojson.features.push(
-      ...newData.data.map(
-        (d) =>
-          ({
-            type: 'Feature',
-            id: d.stop_name,
-            geometry: {
-              type: 'Point',
-              coordinates: [
-                parseFloat(d.stop_lon) || 0,
-                parseFloat(d.stop_lat) || 0
-              ]
-            },
-            properties: d
-          } as StopFeature)
-      )
-    );
+    geojson.features.forEach((f) => {
+      const data = newData.data.find((d) => f.id === d.stop_name) || null;
+
+      f.properties.data = data;
+      f.properties.marker?.setStyle(calculateMarkerOptions(data));
+      f.properties.marker?.getTooltip()?.setContent(calculateTooltipContent(f));
+    });
+    console.log('updated');
   },
   { immediate: true }
 );
 
-watch(toggle, async (newValue, oldValue) => {
+watch(toggle, (_) => {
   geojson.features.forEach((f) => {
-    f.properties.marker?.setStyle(calculateMarkerOptions(f.properties));
+    f.properties.marker?.setStyle(calculateMarkerOptions(f.properties.data));
   });
 });
+
+function calculateTooltipContent(feature: StopFeature) {
+  return `
+<h3>${feature.id}</h3>
+<p>Count: ${feature.properties.data?.count || 'n/a'}</p>
+<p>Avg: ${feature.properties.data?.avg || 'n/a'}</p>
+`;
+}
 
 onBeforeMount(async () => {
   // @ts-ignore
@@ -128,15 +207,8 @@ onBeforeMount(async () => {
   options.pointToLayer = (feature: StopFeature, latLng: typeof LatLng) => {
     const marker: CircleMarker = circleMarker(
       latLng,
-      calculateMarkerOptions(feature.properties)
-    ).bindTooltip(
-      `          <h3>${feature.properties.stop_name}</h3>
-                <ul>
-                  <li>Count: ${feature.properties.count}</li>
-                  <li>Avg: ${(feature.properties.avg / 60).toFixed(2)}s</li>
-                </ul>`,
-      { direction: 'top' }
-    );
+      calculateMarkerOptions(feature.properties.data)
+    ).bindTooltip(calculateTooltipContent(feature), { direction: 'top' });
     feature.properties.marker = marker;
     return marker;
   };
@@ -146,22 +218,12 @@ function selectOption(
   option: (typeof displayOptions)[keyof typeof displayOptions][0],
   key: keyof typeof displayOptions
 ) {
-  switch (key) {
-    case 'key':
-      toggle.key = option.key as keyof Stop;
-      break;
-    case 'time':
-      toggle.time = option.key;
-      break;
-  }
+  toggle[key] = option.key as keyof StopData;
 }
 </script>
 
 <template>
-  <h1>map</h1>
-  <input v-model="toggle" />
-  <p v-if="!pending">{{ data.boxValues.avg }}</p>
-  <div style="height: 600px; width: 100vw">
+  <div style="height: 100%; width: 100vw">
     <l-map
       ref="map"
       v-model:zoom="zoom"
@@ -175,30 +237,30 @@ function selectOption(
         attribution="OpenStreetMap Mitwirkende"
       ></l-tile-layer>
       <l-geo-json :geojson="geojson" :options="options" />
-      <l-control position="topright">
-        <div class="w-32 flex flex-col gap-8">
-          <div
-            class="flex leaflet-bar flex-col divide-y-2 divide-gray-500"
-            v-for="optionType in Object.keys(displayOptions)"
-          >
-            <div v-for="option in displayOptions[optionType]">
-              <button
-                :disabled="pending"
-                class="p-2 bg-gray-300 disabled:bg-gray-100 hover:bg-gray-600 disabled:hover:bg-gray-100 text-black disabled:text-gray-600 transition-colors w-full"
-                :class="{
-                  ['bg-gray-400 disabled:bg-gray-300 disabled:hover:bg-gray-300']:
-                    option.key === toggle[optionType]
-                }"
-                @click="
-                  selectOption(
-                    option,
-                    optionType as keyof typeof displayOptions
-                  )
-                "
-              >
-                {{ option.name }}
-              </button>
-            </div>
+      <SideControl
+        :show-option-type="showOptionType"
+        :display-options="displayOptions"
+        :disabled="pending"
+        :toggle="toggle"
+        @select="selectOption"
+      />
+      <l-control position="bottomleft">
+        <div class="flex flex-col gap-4 max-w-[40vw]">
+          <div class="leaflet-bar bg-gray-300">
+            <Table
+              v-if="!pending"
+              width="w-[300px]"
+              nonclickable
+              :data="
+  Object.keys(data?.boxValues || {}).map((k) => ({
+    key: k,
+    ...data!!.boxValues[k]
+  })) || []"
+              :cols="['key', 'low', 'q1', 'median', 'q3', 'high']"
+            />
+          </div>
+          <div class="leaflet-bar p-2 bg-gray-300">
+            <h3>Histogram</h3>
           </div>
         </div>
       </l-control>

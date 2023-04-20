@@ -3,6 +3,7 @@ import { defineNuxtConfig } from 'nuxt/config';
 export default defineNuxtConfig({
   modules: ['@nuxtjs/tailwindcss'],
   nitro: {
+    timing: true,
     storage: {
       cache: {
         driver: 'fs',

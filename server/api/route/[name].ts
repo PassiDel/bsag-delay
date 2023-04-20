@@ -8,63 +8,75 @@ export default cachedEventHandler(async (event) => {
   const name = decodeURI(rawName);
 
   try {
-    const { route_id, date } = await prisma.route.findFirstOrThrow({
+    const routes = await prisma.route.findMany({
       where: {
         route_short_name: name
       },
       select: {
-        route_id: true,
-        date: true
+        route_id: true
       },
       orderBy: {
         date: 'desc'
       }
     });
 
-    const [{ total_count, avg_dep, avg_arr, avg_added, trips }]: {
+    console.log(routes);
+
+    const [{ total_count, avg_dep, avg_arr, avg_added, trips: trip_count }]: {
       total_count: bigint;
       avg_dep: number;
       avg_arr: number;
       avg_added: number;
       trips: bigint;
     }[] =
-      await prisma.$queryRaw`select count(*)                                                       as total_count,
+      await prisma.$queryRawUnsafe(`select count(*)                                                       as total_count,
        count(distinct trip_id + start_date) as trips,
                                         avg(departure_delay)                                           as avg_dep,
                                         avg(arrival_delay)                                             as avg_arr,
                                         avg(coalesce(departure_delay, 0) - coalesce(arrival_delay, 0)) as avg_added
                                  from "StopDelay" SD
                                  
-                                 where SD.route_id = ${route_id};`;
+                                 where SD.route_id in (${routes
+                                   .map((r) => r.route_id)
+                                   .join(', ')});`);
 
-    const { trip_id, trip_headsign } = await prisma.trip.findFirstOrThrow({
+    const trips = await prisma.trip.findMany({
       where: {
-        route_id,
-        date
+        route_id: {
+          in: routes.map((r) => r.route_id)
+        }
       },
       select: {
-        trip_id: true,
-        trip_headsign: true
+        trip_id: true
       }
     });
+
+    console.log(trips.length);
 
     const stopTimes = await prisma.stopTime.findMany({
       where: {
-        trip_id,
-        date
+        trip_id: {
+          in: trips.map((t) => t.trip_id)
+        }
       },
       select: {
         stop_id: true
-      }
+      },
+      orderBy: {
+        stop_sequence: 'asc'
+      },
+      distinct: ['stop_id']
     });
+
+    console.log(stopTimes.length);
 
     const stops = await prisma.stop.findMany({
       where: {
         stop_id: {
           in: stopTimes.map((s) => s.stop_id)
-        },
-        date
+        }
       },
+      distinct: ['stop_name'],
       select: {
         stop_id: true,
         stop_name: true,
@@ -73,10 +85,12 @@ export default cachedEventHandler(async (event) => {
       }
     });
 
+    console.log(stops.length);
+
     return {
       name,
       total_count: Number(total_count),
-      trips: Number(trips),
+      trips: Number(trip_count),
       avg_dep: secondsToHuman(avg_dep),
       avg_arr: secondsToHuman(avg_arr),
       avg_added: secondsToHuman(avg_added),

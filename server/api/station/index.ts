@@ -2,14 +2,21 @@ import { prisma } from '~/server/prisma';
 import { defineEventHandler, getQuery } from 'h3';
 import { secondsToHuman } from '~/server/time';
 
-export default cachedEventHandler(async (event) => {
+export default defineEventHandler(async (event) => {
   const { page: pageRaw } = getQuery(event);
+  const timing = (globalThis as any).__timing__ as {
+    logStart: (id: string) => void;
+    logEnd: (id: string) => void;
+    metrics: [string, number, number][];
+  };
+  console.log(timing);
 
   const page =
     pageRaw && typeof pageRaw === 'string' ? parseInt(pageRaw) || 1 : 1;
 
   const perPage = 20;
 
+  timing.logStart('db');
   const stops = await prisma.$queryRaw<
     {
       name: string;
@@ -17,24 +24,23 @@ export default cachedEventHandler(async (event) => {
       avg_added: string;
     }[]
   >`select S.stop_name                                                    as name,
-                                  count(*)                                                       as total_count,
-                                  avg(coalesce(departure_delay, 0) - coalesce(arrival_delay, 0)) as avg_added
-                           from "StopDelay" SD
-                                    left join "Stop" S on SD.stop_id = S.stop_id and S.date = SD.date
-                           group by S.stop_name
-                           order by total_count desc
-                           OFFSET ${
-                             (page - 1) * perPage
-                           } ROWS FETCH NEXT ${perPage} ROWS ONLY;`;
+           count(*)                                                       as total_count,
+           avg(coalesce(departure_delay, 0) - coalesce(arrival_delay, 0)) as avg_added
+    from "StopDelay" SD
+             left join "Stop" S on SD.stop_id = S.stop_id and S.date = SD.date
+    group by S.stop_name
+    order by total_count desc
+    OFFSET ${(page - 1) * perPage} ROWS FETCH NEXT ${perPage} ROWS ONLY;`;
 
   const [{ count }] = await prisma.$queryRaw<
     { count: bigint }[]
   >`select count(*) as count
-from (select 1
-      from "StopDelay" SD
-               left join "Stop" S on SD.stop_id = S.stop_id and S.date = SD.date
-      group by S.stop_name) q;`;
+    from (select 1
+          from "StopDelay" SD
+                   left join "Stop" S on SD.stop_id = S.stop_id and S.date = SD.date
+          group by S.stop_name) q;`;
 
+  timing.logEnd('db');
   return {
     data: stops.map(({ total_count, name, avg_added }) => ({
       name,

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { capitalize } from '~/utils/hex';
 
-const { data, cols } = defineProps<{
+const { data, cols, width, nonclickable } = defineProps<{
   data: Record<string, any>[];
   cols: string[];
+  width?: string;
+  nonclickable?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -13,7 +15,7 @@ const emit = defineEmits<{
 
 <template>
   <div class="overflow-y-auto">
-    <table class="w-full">
+    <table :class="width || 'w-full'">
       <thead class="sticky top-0 bg-gray-600 text-gray-50">
         <tr class="h-12">
           <slot v-for="col in cols" :name="`col-${col}`">
@@ -24,7 +26,8 @@ const emit = defineEmits<{
       <tbody class="overflow-y-auto">
         <tr
           v-for="row in data"
-          class="text-center h-10 hover:bg-gray-400 bg-gray-300 transition-colors cursor-pointer"
+          class="text-center h-10 hover:bg-gray-400 bg-gray-300 transition-colors"
+          :class="{ 'cursor-pointer': !nonclickable }"
           @click="emit('click', row)"
         >
           <slot :name="`row`" :row="row">
