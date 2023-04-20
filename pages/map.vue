@@ -220,6 +220,12 @@ function selectOption(
 ) {
   toggle[key] = option.key as keyof StopData;
 }
+
+const histoData = computed(() => {
+  if (!data || !data.value) return [];
+
+  return data.value.data.map((d) => d.avg) || [];
+});
 </script>
 
 <template>
@@ -244,12 +250,11 @@ function selectOption(
         :toggle="toggle"
         @select="selectOption"
       />
-      <l-control position="bottomleft">
-        <div class="flex flex-col gap-4 max-w-[40vw]">
+      <l-control position="bottomleft" v-if="!pending">
+        <div class="flex flex-col gap-4 max-w-[30vw]">
           <div class="leaflet-bar bg-gray-300">
             <Table
               v-if="!pending"
-              width="w-[300px]"
               nonclickable
               :data="
   Object.keys(data?.boxValues || {}).map((k) => ({
@@ -259,8 +264,8 @@ function selectOption(
               :cols="['key', 'low', 'q1', 'median', 'q3', 'high']"
             />
           </div>
-          <div class="leaflet-bar p-2 bg-gray-300">
-            <h3>Histogram</h3>
+          <div class="leaflet-bar p-2 bg-gray-300 max-w-[30vw]">
+            <Histogram :buckets="10" :data="histoData" />
           </div>
         </div>
       </l-control>
