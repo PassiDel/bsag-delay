@@ -16,3 +16,14 @@ export function secondsToHuman(input: number) {
 export function padLead(number: number, digits: number = 2) {
   return String(number).padStart(digits, '0');
 }
+
+export function nonNullable<T>(value: T): value is NonNullable<T> {
+  return value !== null && value !== undefined;
+}
+
+export const useTiming = () =>
+  (globalThis as any).__timing__ as {
+    logStart: (id: string) => void;
+    logEnd: (id: string) => void;
+    metrics: [string, number, number][];
+  };

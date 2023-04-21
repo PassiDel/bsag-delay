@@ -4,13 +4,15 @@ export type StopData = {
   stop_name: string;
   total_count: bigint;
   avg_added: string;
+  avg_dep: string;
   max_added: number;
   max_dep: number;
 };
 export function transformMapData(stops: StopData[]) {
-  const data = stops.map(({ total_count, avg_added, ...s }) => ({
+  const data = stops.map(({ total_count, avg_added, avg_dep, ...s }) => ({
     count: Number(total_count),
     avg: Number(avg_added),
+    dep: Number(avg_dep),
     ...s
   }));
 
@@ -19,7 +21,10 @@ export function transformMapData(stops: StopData[]) {
     maxCount: data.reduce((acc, d) => (d.count > acc ? d.count : acc), 0),
     boxValues: {
       avg: getBoxValues(data.map((d) => d.avg)),
-      count: getBoxValues(data.map((d) => d.count))
+      count: getBoxValues(data.map((d) => d.count)),
+      dep: getBoxValues(data.map((d) => d.dep)),
+      max_dep: getBoxValues(data.map((d) => d.max_dep)),
+      max_added: getBoxValues(data.map((d) => d.max_added))
     }
   };
 }

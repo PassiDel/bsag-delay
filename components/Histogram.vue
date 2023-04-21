@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import {
-  Chart as ChartJS,
-  Title,
-  Tooltip,
-  Legend,
   BarElement,
   CategoryScale,
+  Chart as ChartJS,
+  ChartData,
+  Legend,
   LinearScale,
-  ChartData
+  Title,
+  Tooltip
 } from 'chart.js';
 import { Bar } from 'vue-chartjs';
+import { useMapStore } from '~/stores/map';
+import { storeToRefs } from 'pinia';
 
 ChartJS.register(
   CategoryScale,
@@ -20,40 +22,35 @@ ChartJS.register(
   Legend
 );
 
-const { data, buckets } = defineProps<{
-  data: number[];
-  buckets?: number;
-}>();
+const { histoData } = storeToRefs(useMapStore());
 
 const chartData = ref<ChartData<'bar'>>({
   labels: [],
   datasets: [
     {
-      label: 'Data One',
+      label: histoData.value.title,
       backgroundColor: '#f87979',
       data: []
     }
   ]
 });
-
-const b = buckets || 1;
 onMounted(() => {
   watch(
-    () => data,
-    (_) => {
-      console.log('new data!');
+    histoData,
+    ({ data, buckets, title, colors }) => {
+      if (data.length <= 0) return;
+      const b = buckets || 1;
       const max = data.reduce((a, b) => Math.max(a, b), -Infinity);
       const min = data.reduce((a, b) => Math.min(a, b), Infinity);
       const x = [...Array(Math.ceil((max - min) / b)).keys()].map(
         (d) => d + Math.round(min / b)
       );
-      const labels = x.map((x) => (x * b).toString());
+      const labels = x.map((x) => {
+        if (b <= 1) return (x * b).toString();
 
-      console.log(
-        x,
-        labels,
-        x.map((d) => (d - 1) * b)
-      );
+        return `${(x - 1) * b} - ${x * b}`;
+      });
+
       const dataset = x.map((i) =>
         data.reduce((a, d) => a + (d > (i - 1) * b && d <= i * b ? 1 : 0), 0)
       );
@@ -62,8 +59,8 @@ onMounted(() => {
         labels,
         datasets: [
           {
-            label: `Avg`,
-            backgroundColor: x.map((d) => (d < 0 ? 'green' : 'red')),
+            label: title,
+            backgroundColor: x.map(colors),
             data: dataset
           }
         ]
@@ -86,11 +83,11 @@ onMounted(() => {
             x: {
               display: true,
               label: 'Anzahl'
-            },
-            y: {
-              display: true,
-              text: 'Sekunden'
             }
+          },
+          y: {
+            display: true,
+            text: 'Sekunden'
           }
         }"
       />

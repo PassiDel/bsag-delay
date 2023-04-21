@@ -1,38 +1,27 @@
 <script setup lang="ts">
-import {
-  LCircleMarker,
-  LMap,
-  LMarker,
-  LTileLayer,
-  LTooltip
-} from '@vue-leaflet/vue-leaflet';
-import { onBeforeMount } from '#imports';
+import { LMap, LMarker, LTileLayer, LTooltip } from '@vue-leaflet/vue-leaflet';
 
 const { latLngs } = defineProps<{
-  latLngs: [number, number][];
+  latLngs: { name: string; coords: [number, number] }[];
 }>();
 
-const map = ref(null);
-const center = ref(null);
-
-onBeforeMount(async () => {
+const onLoad = async (event: { fitBounds: (bounds: any) => void }) => {
   // @ts-ignore
   const { LatLngBounds } = await import('leaflet/dist/leaflet-src.esm');
-  const bounds = new LatLngBounds(latLngs);
+  const bounds = new LatLngBounds(latLngs.map((l) => l.coords));
 
-  center.value = bounds.getCenter();
-  console.log(bounds.getCenter(), map.value);
-  // map.value?.map?.fitBounds(bounds);
-});
+  event.fitBounds(bounds);
+};
 </script>
 
 <template>
   <div class="w-full h-full">
     <l-map
-      ref="map"
       :zoom="12"
       :center="[53.0897605, 8.826296]"
       :useGlobalLeaflet="false"
+      @ready="onLoad($event)"
+      attribution="VBN"
     >
       <l-tile-layer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -40,7 +29,15 @@ onBeforeMount(async () => {
         name="OpenStreetMap"
         attribution="OpenStreetMap Mitwirkende"
       ></l-tile-layer>
-      <l-marker v-for="latLng in latLngs" :lat-lng="latLng"> </l-marker>
+      <l-marker
+        v-for="latLng in latLngs"
+        :lat-lng="latLng.coords"
+        attribution="VBN"
+      >
+        <LTooltip :options="{ direction: 'top' }">
+          <h3>{{ latLng.name }}</h3>
+        </LTooltip>
+      </l-marker>
     </l-map>
   </div>
 </template>

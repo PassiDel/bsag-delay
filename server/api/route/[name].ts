@@ -1,6 +1,5 @@
 import { prisma } from '~/server/prisma';
-import { secondsToHuman } from '~/server/time';
-import { defineEventHandler } from 'h3';
+import { nonNullable, secondsToHuman } from '~/server/time';
 
 export default cachedEventHandler(async (event) => {
   const { name: rawName } = event.context.params!!;
@@ -19,8 +18,6 @@ export default cachedEventHandler(async (event) => {
         date: 'desc'
       }
     });
-
-    console.log(routes);
 
     const [{ total_count, avg_dep, avg_arr, avg_added, trips: trip_count }]: {
       total_count: bigint;
@@ -68,8 +65,6 @@ export default cachedEventHandler(async (event) => {
       distinct: ['stop_id']
     });
 
-    console.log(stopTimes.length);
-
     const stops = await prisma.stop.findMany({
       where: {
         stop_id: {
@@ -85,8 +80,6 @@ export default cachedEventHandler(async (event) => {
       }
     });
 
-    console.log(stops.length);
-
     return {
       name,
       total_count: Number(total_count),
@@ -95,7 +88,8 @@ export default cachedEventHandler(async (event) => {
       avg_arr: secondsToHuman(avg_arr),
       avg_added: secondsToHuman(avg_added),
       stops: stopTimes
-        .map((st) => stops.find((s) => s.stop_id === st.stop_id)!!)
+        .map((st) => stops.find((s) => s.stop_id === st.stop_id))
+        .filter(nonNullable)
         .map(({ stop_id, ...s }) => s)
     };
   } catch (e) {

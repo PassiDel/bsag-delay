@@ -1,33 +1,29 @@
 <script setup lang="ts">
 import { LControl } from '@vue-leaflet/vue-leaflet';
+import { useMapStore } from '~/stores/map';
+import { storeToRefs } from 'pinia';
 
-const { showOptionType, displayOptions, disabled, toggle } = defineProps<{
-  showOptionType: string[];
-  displayOptions: {
-    [key: string]: {
-      key: string;
-      name: string;
-    }[];
-  };
+const mapStore = useMapStore();
+const { displayOptions, showOptionType, toggle } = storeToRefs(mapStore);
+
+const { disabled } = defineProps<{
   disabled: boolean;
-  toggle: {
-    [a: keyof typeof displayOptions]: string;
-  };
 }>();
 
-const emit = defineEmits<{
-  (
-    e: 'select',
-    option: (typeof displayOptions)[keyof typeof displayOptions][0],
-    key: keyof typeof displayOptions
-  ): void;
-}>();
+function selectOption(
+  option: (typeof mapStore.displayOptions)[keyof typeof mapStore.displayOptions][0],
+  key: keyof typeof mapStore.displayOptions
+) {
+  //@ts-ignore
+  mapStore.toggle[key] = option.key;
+}
+
 const { log } = console;
 </script>
 
 <template>
   <l-control position="topright">
-    <div class="w-32 flex flex-col gap-8">
+    <div class="w-36 flex flex-col gap-8">
       <div
         class="flex leaflet-bar flex-col divide-y-2 divide-gray-500"
         v-for="optionType in showOptionType"
@@ -44,7 +40,7 @@ const { log } = console;
                 option.key === toggle[optionType]
             }"
             @click="
-              emit('select', option, optionType as keyof typeof displayOptions)
+              selectOption(option, optionType as keyof typeof displayOptions)
             "
           >
             {{ option.name }}
@@ -53,8 +49,7 @@ const { log } = console;
         <div v-else>
           <select
             @input="
-              emit(
-                'select',
+              selectOption(
                 displayOptions[optionType].find(
                   (k) => k.key === $event.target.value
                 ),

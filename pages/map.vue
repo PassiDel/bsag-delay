@@ -1,19 +1,11 @@
 <script setup lang="ts">
 import { LControl, LGeoJson, LMap, LTileLayer } from '@vue-leaflet/vue-leaflet';
-import { clamp, lerpColor, colors, hexToString } from '~/utils/hex';
-import {
-  ref,
-  reactive,
-  useLazyFetch,
-  onBeforeMount,
-  watch,
-  useFetch
-} from '#imports';
-import { Feature, FeatureCollection, GeoJSON, Geometry } from 'geojson';
-import { UnwrapRef } from 'vue';
+import { clamp, colors, hexToString, lerpColor } from '~/utils/hex';
+import { onBeforeMount, ref, useFetch, useLazyFetch, watch } from '#imports';
+import { Feature, FeatureCollection, Geometry } from 'geojson';
 import type { CircleMarker } from 'leaflet';
-import { getDaysArray, getMonthArray } from '~/utils/days';
 import SideControl from '~/components/SideControl.vue';
+import { StopData, useMapStore } from '~/stores/map';
 
 definePageMeta({
   layout: 'full'
@@ -26,92 +18,17 @@ const zoom = ref(14);
 
 const { data: allStops } = await useFetch('/api/station/all');
 
-const toggle = reactive({
-  key: 'avg' as keyof StopData,
-  time: 'all',
-  week: '0',
-  day: new Date(allStops.value!!.dates.min!!).toISOString().slice(0, 10),
-  month: '2022-01-04',
-  hour: '12'
-});
-
-const queryUri = computed(() => {
-  const paths = [toggle.time];
-  if (toggle.time === 'week') paths.push(toggle.week);
-  if (toggle.time === 'day') paths.push(toggle.day);
-  if (toggle.time === 'month') paths.push(toggle.month);
-  if (toggle.time === 'hour') paths.push(toggle.hour);
-
-  return paths.join('/');
-});
+const mapStore = useMapStore();
 const { data, pending } = await useLazyFetch(
-  () => `/api/map/${queryUri.value}`
+  () => `/api/map/${mapStore.queryUri}`
 );
-interface StopData {
-  stop_name: string;
-
-  count: number | undefined;
-  avg: number | undefined;
-  max_added: number | undefined;
-  max_dep: number | undefined;
-}
 
 interface StopMarker {
   marker: CircleMarker | null;
   data: StopData | null;
 }
 
-const displayOptions = {
-  key: [
-    { key: 'avg', name: 'Relative Verspätung' },
-    { key: 'count', name: 'Anzahl Fahrten' }
-  ] as { key: keyof StopData; name: string }[],
-  time: [
-    { key: 'all', name: 'Alles' },
-    { key: 'month', name: 'Monat' },
-    { key: 'week', name: 'Wochentag' },
-    { key: 'day', name: 'Tag' },
-    { key: 'hour', name: 'Stunde' }
-  ],
-  week: [
-    'Sonntag',
-    'Montag',
-    'Dienstag',
-    'Mittwoch',
-    'Donnerstag',
-    'Freitag',
-    'Samstag'
-  ].map((d, i) => ({
-    key: i.toString(),
-    name: d
-  })),
-  day: getDaysArray(
-    allStops.value!!.dates.min!!,
-    allStops.value!!.dates.max!!
-  ).map((d) => ({ key: d.toISOString().slice(0, 10), name: d.toDateString() })),
-  month: getMonthArray(
-    allStops.value!!.dates.min!!,
-    allStops.value!!.dates.max!!
-  ).map((d) => ({
-    key: d.toISOString().slice(0, 10),
-    name: d.toLocaleString('de', { month: 'long', year: 'numeric' })
-  })),
-  hour: [...Array(24).keys()].map((i) => ({
-    key: i.toString(),
-    name: `${i.toString().padStart(2, '0')}:00`
-  }))
-};
-
-const showOptionType = computed(() => {
-  const options = ['key', 'time'];
-
-  if (toggle.time === 'week') options.push('week');
-  if (toggle.time === 'day') options.push('day');
-  if (toggle.time === 'month') options.push('month');
-  if (toggle.time === 'hour') options.push('hour');
-
-  return options;
-});
+mapStore.updateDates(allStops.value!!.dates);
 
 function calculateMarkerOptions(marker: StopData | null) {
   if (!marker || marker.count === undefined) {
@@ -123,8 +40,9 @@ function calculateMarkerOptions(marker: StopData | null) {
       attribution: 'VBN'
     };
   }
-  const percent =
-    Number(marker[toggle.key]) / data.value!!.boxValues.avg.median;
+  const key = mapStore.toggle.key;
+  const median = data.value!!.boxValues[key].median;
+  const percent = (Number(marker[key]) - median) / median;
   return {
     opacity: 0,
     fillColor:
@@ -171,8 +89,9 @@ const options = {
 watch(
   data,
   (newData) => {
+    mapStore.updateData(newData);
     if (!newData) return;
-    console.log('newdata!');
+
     geojson.features.forEach((f) => {
       const data = newData.data.find((d) => f.id === d.stop_name) || null;
 
@@ -180,12 +99,11 @@ watch(
       f.properties.marker?.setStyle(calculateMarkerOptions(data));
       f.properties.marker?.getTooltip()?.setContent(calculateTooltipContent(f));
     });
-    console.log('updated');
   },
   { immediate: true }
 );
 
-watch(toggle, (_) => {
+watch(mapStore.toggle, (_) => {
   geojson.features.forEach((f) => {
     f.properties.marker?.setStyle(calculateMarkerOptions(f.properties.data));
   });
@@ -193,9 +111,14 @@ watch(toggle, (_) => {
 
 function calculateTooltipContent(feature: StopFeature) {
   return `
-<h3>${feature.id}</h3>
-<p>Count: ${feature.properties.data?.count || 'n/a'}</p>
-<p>Avg: ${feature.properties.data?.avg || 'n/a'}</p>
+<h3 class="text-2xl font-bold mb-2">${feature.id}</h3>
+<div class="grid grid-cols-[min-content_1fr] gap-x-2 auto-rows-max">
+<p>Anzahl:</p><p>${feature.properties.data?.count || 'n/a'}</p>
+<p>Ø Relativ:</p><p>${feature.properties.data?.avg || 'n/a'} s</p>
+<p>Ø Absolut:</p><p>${feature.properties.data?.dep || 'n/a'} s</p>
+<p>Max Relativ:</p><p>${feature.properties.data?.max_added || 'n/a'} s</p>
+<p>Max Absolut:</p><p>${feature.properties.data?.max_dep || 'n/a'} s</p>
+</div>
 `;
 }
 
@@ -212,19 +135,6 @@ onBeforeMount(async () => {
     feature.properties.marker = marker;
     return marker;
   };
-});
-
-function selectOption(
-  option: (typeof displayOptions)[keyof typeof displayOptions][0],
-  key: keyof typeof displayOptions
-) {
-  toggle[key] = option.key as keyof StopData;
-}
-
-const histoData = computed(() => {
-  if (!data || !data.value) return [];
-
-  return data.value.data.map((d) => d.avg) || [];
 });
 </script>
 
@@ -243,13 +153,7 @@ const histoData = computed(() => {
         attribution="OpenStreetMap Mitwirkende"
       ></l-tile-layer>
       <l-geo-json :geojson="geojson" :options="options" />
-      <SideControl
-        :show-option-type="showOptionType"
-        :display-options="displayOptions"
-        :disabled="pending"
-        :toggle="toggle"
-        @select="selectOption"
-      />
+      <SideControl :disabled="pending" />
       <l-control position="bottomleft" v-if="!pending">
         <div class="flex flex-col gap-4 max-w-[30vw]">
           <div class="leaflet-bar bg-gray-300">
@@ -265,7 +169,7 @@ const histoData = computed(() => {
             />
           </div>
           <div class="leaflet-bar p-2 bg-gray-300 max-w-[30vw]">
-            <Histogram :buckets="10" :data="histoData" />
+            <Histogram />
           </div>
         </div>
       </l-control>

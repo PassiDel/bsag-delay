@@ -1,15 +1,10 @@
 import { prisma } from '~/server/prisma';
 import { defineEventHandler, getQuery } from 'h3';
-import { secondsToHuman } from '~/server/time';
+import { secondsToHuman, useTiming } from '~/server/time';
 
 export default defineEventHandler(async (event) => {
   const { page: pageRaw } = getQuery(event);
-  const timing = (globalThis as any).__timing__ as {
-    logStart: (id: string) => void;
-    logEnd: (id: string) => void;
-    metrics: [string, number, number][];
-  };
-  console.log(timing);
+  const timing = useTiming();
 
   const page =
     pageRaw && typeof pageRaw === 'string' ? parseInt(pageRaw) || 1 : 1;
