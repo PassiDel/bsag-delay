@@ -1,7 +1,16 @@
 <script setup lang="ts">
+import { useFetch } from '#imports';
+
 useSeoMeta({
   title: `About`
 });
+
+const { data } = await useFetch('/api/station/all', { pick: ['dates'] });
+
+const { min, max } = (data.value?.dates || {
+  min: '2022-01-02T00:00:00.000Z',
+  max: '2022-12-31T00:00:00.000Z'
+}) as { min: string; max: string };
 </script>
 
 <template>
@@ -22,7 +31,13 @@ useSeoMeta({
       >. Diese Arbeit ist dementsprechend unter der selben Lizenz
       veröffentlicht.
     </p>
-    <p>Auswertungszeitraum: 02.01.2022 - 31.12.2022</p>
+    <p>
+      Auswertungszeitraum:
+      <span class="font-bold"
+        >{{ new Date(min).toLocaleDateString('de') }} -
+        {{ new Date(max).toLocaleDateString('de') }}</span
+      >
+    </p>
     <p>
       Auszuwertender Vekehrsbetrieb:
       <a href="https://bsag.de" target="_blank">BSAG</a>
