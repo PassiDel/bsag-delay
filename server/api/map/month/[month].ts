@@ -1,7 +1,7 @@
 import { prisma } from '~/server/prisma';
 import { StopData, transformMapData } from '~/server/mapData';
 
-export default defineEventHandler(async (event) => {
+export default cachedEventHandler(async (event) => {
   const { month } = event.context.params!!;
 
   console.log(month);

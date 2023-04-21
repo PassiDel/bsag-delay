@@ -2,7 +2,7 @@ import { prisma } from '~/server/prisma';
 import { StopData, transformMapData } from '~/server/mapData';
 import { toTimeString } from '~/utils/days';
 
-export default defineEventHandler(async (event) => {
+export default cachedEventHandler(async (event) => {
   const { hour: hourRaw } = event.context.params!!;
 
   const hour = parseInt(hourRaw);

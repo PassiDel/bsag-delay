@@ -9,8 +9,6 @@ useSeoMeta({
 });
 
 const { data, error } = await useFetch(`/api/route/${name}`);
-
-type a = typeof data.value;
 </script>
 
 <template>

@@ -1,8 +1,8 @@
 import { prisma } from '~/server/prisma';
-import { defineEventHandler, getQuery } from 'h3';
+import { getQuery } from 'h3';
 import { secondsToHuman, useTiming } from '~/server/time';
 
-export default defineEventHandler(async (event) => {
+export default cachedEventHandler(async (event) => {
   const { page: pageRaw } = getQuery(event);
   const timing = useTiming();
 
