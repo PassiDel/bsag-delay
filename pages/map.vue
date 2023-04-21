@@ -139,6 +139,7 @@ onBeforeMount(async () => {
 </script>
 
 <template>
+  <Loading :show="pending" />
   <div style="height: 100%; width: 100vw">
     <l-map
       ref="map"

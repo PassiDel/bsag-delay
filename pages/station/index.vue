@@ -14,6 +14,7 @@ const { data, pending } = await useFetch(
 </script>
 
 <template>
+  <Loading :show="pending" />
   <div class="flex flex-col h-full gap-2">
     <h1 class="text-2xl">Stationen</h1>
     <!--suppress TypeScriptValidateTypes -->

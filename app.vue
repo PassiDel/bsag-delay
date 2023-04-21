@@ -9,6 +9,7 @@
     </nav>
   </header>
   <NuxtLayout>
+    <NuxtLoadingIndicator />
     <NuxtPage />
   </NuxtLayout>
   <footer class="flex flex-row gap-8 justify-center">
@@ -39,6 +40,7 @@ a {
 import 'leaflet/dist/leaflet.css';
 
 import cc from './assets/cc.png';
+
 useHead({
   htmlAttrs: {
     lang: 'de'
