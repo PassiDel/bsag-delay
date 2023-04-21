@@ -1,7 +1,7 @@
 import { prisma } from '~/server/prisma';
 import { StopData, transformMapData } from '~/server/mapData';
 
-export default defineEventHandler(async () => {
+export default cachedEventHandler(async () => {
   const stops = await prisma.$queryRaw<
     StopData[]
   >`select S.stop_name                                                                            as stop_name,
