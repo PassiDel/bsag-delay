@@ -1,7 +1,7 @@
 <template>
   <header>
     <nav class="flex flex-row gap-4 p-4 items-center">
-      <span class="text-2xl mr-4 cursor-default">Delay</span>
+      <NuxtLink to="/"><span class="text-2xl mr-4">Delay</span></NuxtLink>
       <NuxtLink to="/map">Map</NuxtLink>
       <NuxtLink to="/station">Station</NuxtLink>
       <NuxtLink to="/route">Linie</NuxtLink>
