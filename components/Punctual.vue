@@ -1,29 +1,9 @@
 <script setup lang="ts">
-import {
-  BarElement,
-  Chart as ChartJS,
-  ChartOptions,
-  Legend,
-  LinearScale,
-  LineElement,
-  PointElement,
-  TimeScale,
-  Title,
-  Tooltip
-} from 'chart.js';
+import { Chart as ChartJS, registerables } from 'chart.js';
 import { Bar } from 'vue-chartjs';
 import 'chartjs-adapter-moment';
 
-ChartJS.register(
-  TimeScale,
-  LinearScale,
-  PointElement,
-  BarElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
+ChartJS.register(...registerables);
 
 const { data } = defineProps<{
   data: { date: Date; total: number; min: number; db: number; perc: number }[];
@@ -111,7 +91,9 @@ const options: ChartOptions<'line'> = {
 
 <template>
   <div class="w-full h-full">
-    <Bar :data="lineData" :options="options" />
+    <ClientOnly>
+      <Bar :data="lineData" :options="options" />
+    </ClientOnly>
   </div>
 </template>
 
