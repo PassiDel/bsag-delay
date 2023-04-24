@@ -1,5 +1,6 @@
 import { prisma } from '~/server/prisma';
 import { nonNullable, secondsToHuman } from '~/server/time';
+import { transformStats } from '~/server/mapData';
 
 export default cachedEventHandler(async (event) => {
   const { name: rawName } = event.context.params!!;
@@ -80,6 +81,42 @@ export default cachedEventHandler(async (event) => {
       }
     });
 
+    const dates = await prisma.stopDelay.findMany({
+      distinct: ['start_date'],
+      select: {
+        start_date: true
+      },
+      orderBy: {
+        start_date: 'asc'
+      }
+    });
+
+    const stats = await Promise.all(
+      dates.map(async (d) => {
+        const [{ total, min, db }] = await prisma.$queryRawUnsafe<
+          {
+            total: bigint;
+            min: bigint;
+            db: bigint;
+          }[]
+        >(`Select count(q) as total, sum(q.min) as min, sum(q.db) as db
+           from (SELECT trip_id,
+                        CASE When SUM(CASE when departure_delay > 60 then 1 else 0 end) > 0 then 1 else 0 end  as min,
+                        CASE When SUM(CASE when departure_delay > 300 then 1 else 0 end) > 0 then 1 else 0 end as db
+                 FROM "StopDelay" t
+                 where start_date = '${
+                   d.start_date.toISOString().split('T')[0]
+                 }'
+                   and t.route_id in (${routes
+                     .map((r) => r.route_id)
+                     .join(', ')})
+
+                 group by trip_id) q
+        ;`);
+        return transformStats(d.start_date, total, min, db);
+      })
+    );
+
     return {
       name,
       total_count: Number(total_count),
@@ -90,7 +127,8 @@ export default cachedEventHandler(async (event) => {
       stops: stopTimes
         .map((st) => stops.find((s) => s.stop_id === st.stop_id))
         .filter(nonNullable)
-        .map(({ stop_id, ...s }) => s)
+        .map(({ stop_id, ...s }) => s),
+      stats
     };
   } catch (e) {
     console.error(name, e);

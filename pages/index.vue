@@ -1,4 +1,8 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+useSeoMeta({
+  title: `BSAG Delay`
+});
+</script>
 
 <template>
   <h1>
@@ -10,8 +14,9 @@
   >
     <NuxtLink to="/map">Kartenansicht</NuxtLink>
     <NuxtLink to="/station">Liste aller Haltestellen</NuxtLink>
-    <NuxtLink to="/routes">Liste aller Linien</NuxtLink>
-    <NuxtLink to="/station/Bremen%20Hauptbahnhof" class="mt-4"
+    <NuxtLink to="/route">Liste aller Linien</NuxtLink>
+    <NuxtLink to="/stats">Auswertung</NuxtLink>
+    <NuxtLink to="/station/Bremen%20Hauptbahnhof" class="mt-8"
       >Hauptbahnhof
     </NuxtLink>
     <NuxtLink to="/route/6">Linie 6</NuxtLink>

@@ -6,6 +6,7 @@
       <NuxtLink to="/station">Station</NuxtLink>
       <NuxtLink to="/route">Linie</NuxtLink>
       <NuxtLink to="/about">About</NuxtLink>
+      <NuxtLink to="/stats">Stats</NuxtLink>
     </nav>
   </header>
   <NuxtLayout>

@@ -28,3 +28,18 @@ export function transformMapData(stops: StopData[]) {
     }
   };
 }
+
+export function transformStats(
+  date: Date,
+  total: bigint,
+  min: bigint,
+  db: bigint
+) {
+  return {
+    date,
+    total: Number(total) - Number(min),
+    min: Number(min) - Number(db),
+    db: Number(db),
+    perc: 100 - 100 * (Number(db) / Number(total)) || 0
+  };
+}
