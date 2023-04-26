@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useFetch } from '#app';
-import Pagination from '~/components/Pagination.vue';
 
 useSeoMeta({
   title: 'Linien'
@@ -11,7 +10,7 @@ const { data } = await useFetch(() => `/api/route`);
 
 <template>
   <div class="flex flex-col h-full gap-2">
-    <h1 class="text-2xl">Stationen</h1>
+    <h1 class="text-2xl">Linien</h1>
     <!--suppress TypeScriptValidateTypes -->
     <Table
       :data="data"

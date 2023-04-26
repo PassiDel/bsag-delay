@@ -27,11 +27,11 @@ const percent = computed(() => {
   <div v-if="data" class="container justify-between max-h-full w-full">
     <div class="info flex flex-col gap-2 flex-grow">
       <h1 class="text-3xl mb-4">{{ name }}</h1>
-      <h2>Count: {{ data.total_count }}</h2>
+      <h2>Anzahl: {{ data.total_count }}</h2>
       <h2>Pünktlich: {{ percent.toFixed(2) }}%</h2>
-      <h2>Avg Added: {{ data.avg_added }}</h2>
-      <h2>Avg Arrival: {{ data.avg_arr }}</h2>
-      <h2>Avg Departure: {{ data.avg_dep }}</h2>
+      <h2>Ø Relative Verspätung: {{ data.avg_added }}</h2>
+      <h2>Ø Ankunftsverspätung: {{ data.avg_arr }}</h2>
+      <h2>Ø Abfahrtsverspätung: {{ data.avg_dep }}</h2>
     </div>
     <Line
       class="line"
@@ -49,7 +49,7 @@ const percent = computed(() => {
       @click="navigateTo(`/station/${$event.stop_name}`)"
     >
       <template #col-stop_name>
-        <th>Stop</th>
+        <th>Haltestellen</th>
       </template>
     </Table>
     <Punctual class="stats" :data="data.stats" />

@@ -37,10 +37,10 @@ export const useMapStore = defineStore('map', {
   state: () => ({
     displayOptions: {
       key: [
-        { key: 'avg', name: 'Relative Verspätung', buckets: 10 },
-        { key: 'dep', name: 'Absolute Verspätung', buckets: 10 },
+        { key: 'avg', name: 'Ø Relative Verspätung', buckets: 10 },
+        { key: 'dep', name: 'Ø Absolute Verspätung', buckets: 10 },
         { key: 'count', name: 'Anzahl Fahrten', buckets: 100 },
-        { key: 'max_added', name: 'Max relativ', buckets: 5 * 60 },
+        { key: 'max_added', name: 'Max Relativ', buckets: 5 * 60 },
         { key: 'max_dep', name: 'Max Absolut', buckets: 5 * 60 }
       ] as { key: 'count' | 'avg' | 'dep'; name: string; buckets: number }[],
       time: [

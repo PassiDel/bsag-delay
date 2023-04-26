@@ -2,11 +2,11 @@
   <header>
     <nav class="flex flex-row gap-4 p-4 items-center">
       <NuxtLink to="/"><span class="text-2xl mr-4">Delay</span></NuxtLink>
-      <NuxtLink to="/map">Map</NuxtLink>
-      <NuxtLink to="/station">Station</NuxtLink>
-      <NuxtLink to="/route">Linie</NuxtLink>
-      <NuxtLink to="/about">About</NuxtLink>
-      <NuxtLink to="/stats">Stats</NuxtLink>
+      <NuxtLink to="/map">Karte</NuxtLink>
+      <NuxtLink to="/station">Stationen</NuxtLink>
+      <NuxtLink to="/route">Linien</NuxtLink>
+      <NuxtLink to="/stats">Statistik</NuxtLink>
+      <NuxtLink to="/about">Über</NuxtLink>
     </nav>
   </header>
   <NuxtLayout>

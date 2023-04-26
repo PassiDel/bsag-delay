@@ -23,10 +23,12 @@ const { data, pending } = await useFetch(
       :cols="['name', 'count', 'avg']"
       @click="navigateTo(`/station/${$event.name}`)"
     >
-      <template #col-count><th class="w-36">Count</th></template>
-      <template #col-avg
-        ><th class="text-end px-4 w-36">Avg Added (s)</th></template
-      >
+      <template #col-count>
+        <th class="w-36">Anzahl</th>
+      </template>
+      <template #col-avg>
+        <th class="text-end px-4 w-36">Ø Relative Verspätung</th>
+      </template>
       <template #cell-avg="{ cell }"
         ><td class="text-end pr-4">{{ cell }}</td></template
       >

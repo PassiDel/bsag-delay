@@ -136,6 +136,14 @@ onBeforeMount(async () => {
     return marker;
   };
 });
+
+const tableKeys = {
+  avg: 'Ø Relativ (s)',
+  count: 'Anzahl Fahrten',
+  dep: 'Ø Absolut (s)',
+  max_dep: 'Max Absolut (s)',
+  max_added: 'Max Relativ (s)'
+} as const;
 </script>
 
 <template>
@@ -167,7 +175,11 @@ onBeforeMount(async () => {
     ...data!!.boxValues[k]
   })) || []"
               :cols="['key', 'low', 'q1', 'median', 'q3', 'high']"
-            />
+            >
+              <template #cell-key="{ cell }">
+                <td>{{ tableKeys[cell] || cell }}</td>
+              </template>
+            </Table>
           </div>
           <div class="leaflet-bar p-2 bg-gray-300 max-w-[30vw]">
             <Histogram />
