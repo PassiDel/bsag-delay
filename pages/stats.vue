@@ -9,9 +9,12 @@ const { data } = await useFetch('/api/stats');
 const percent = computed(() => {
   if (!data.value) return 0;
 
-  const sum = data.value.reduce((a, c) => a + c.perc, 0);
+  const sum = data.value.reduce(
+    (a, c) => ({ total: a.total + c.total + c.min + c.db, db: a.db + c.db }),
+    { total: 0, db: 0 }
+  );
 
-  return sum / data.value.length;
+  return 100 - 100 * (sum.db / sum.total);
 });
 </script>
 
