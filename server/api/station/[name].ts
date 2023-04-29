@@ -24,12 +24,13 @@ export default cachedEventHandler(async (event) => {
       avg_added: number;
     }[] =
       await prisma.$queryRaw`select count(*)                                                       as total_count,
-                                        avg(departure_delay)                                           as avg_dep,
-                                        avg(arrival_delay)                                             as avg_arr,
-                                        avg(coalesce(departure_delay, 0) - coalesce(arrival_delay, 0)) as avg_added
-                                 from "StopDelay" SD
-                                          left join "Stop" S on SD.stop_id = S.stop_id and S.date = SD.date
-                                 where S.stop_name = ${name};`;
+                                    avg(departure_delay)                                           as avg_dep,
+                                    avg(arrival_delay)                                             as avg_arr,
+                                    avg(coalesce(departure_delay, 0) - coalesce(arrival_delay, 0)) as avg_added
+                             from "StopDelay" SD
+                                      left join "Stop" S on SD.stop_id = S.stop_id
+                             where S.stop_name = ${name}
+                               and S.date = (select min(A.date) from "Stop" A where S.stop_id = A.stop_id);`;
 
     const routes: {
       route_short_name: string;
