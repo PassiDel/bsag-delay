@@ -14,6 +14,8 @@ useSeoMeta({
   title: 'Map'
 });
 
+const router = useRouter();
+
 const zoom = ref(14);
 
 const { data: allStops } = await useFetch('/api/station/all');
@@ -133,6 +135,9 @@ onBeforeMount(async () => {
       calculateMarkerOptions(feature.properties.data)
     ).bindTooltip(calculateTooltipContent(feature), { direction: 'top' });
     feature.properties.marker = marker;
+    marker.addEventListener('click', async (_) => {
+      await router.push(`/station/${feature.properties.data?.stop_name}`);
+    });
     return marker;
   };
 });
